@@ -48,9 +48,10 @@ export class InventoryPage {
         await this.burgerSideBar.click();
     }
 
-    async openCart(): Promise<void> {
+    async openCart(): Promise<void>{
         await this.shoppingCartLink.click();
     }
+
 
 }
 
