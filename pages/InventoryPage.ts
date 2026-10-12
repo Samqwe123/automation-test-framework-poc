@@ -8,6 +8,7 @@ export class InventoryPage {
     readonly shoppingCartLink: Locator;
     readonly productSortDropdown: Locator;
     readonly burgerSideBar: Locator;
+    readonly InventorySideBarLink: Locator;
 
     constructor(page: Page){
         this.page = page;
@@ -18,6 +19,7 @@ export class InventoryPage {
         this.productSortDropdown = page.locator('[data-test="product-sort-container"]');
         //or can use direct ID selector (example: '#react-burger-menu-btn')
         this.burgerSideBar = page.getByRole('button', {name: 'Open Menu'});
+        this.InventorySideBarLink = page.locator('[data-test="inventory-sidebar-link"]');
     }
 
     // Locates a specific product card dynamically by its visible name
