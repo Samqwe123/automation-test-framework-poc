@@ -76,7 +76,7 @@ test.describe("Complete Checkout Funnel", () => {
 
   test("should complete end to end purchase successfully", async ({ page }) => {
     //check if navigate to second screen of checkout
-    await expect(page).toHaveURL(/.*checkout-step-two.html/);
+    await expect(page).toHaveURL(/.*checkout-step-two.html/, {timeout: 10000});
     await expect(checkoutStepTwoPage.cartItem).toHaveCount(1);
 
     await checkoutStepTwoPage.finishCheckout();

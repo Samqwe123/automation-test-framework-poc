@@ -1,4 +1,4 @@
-import { Page,Locator } from "@playwright/test";
+import { Page,Locator, expect } from "@playwright/test";
 
 export class CheckoutStepOne{
 
@@ -26,6 +26,9 @@ async fillInInfoformation(firstName: string, lastName: string, postalCode: strin
     await this.firstName.fill(firstName);
     await this.lastName.fill(lastName);
     await this.zipPostalCode.fill(postalCode);
+
+    // ensure DOM state has settled before firing the submission click
+    await expect(this.zipPostalCode).toHaveValue(postalCode);
     await this.ContinueButton.click();
 }
 

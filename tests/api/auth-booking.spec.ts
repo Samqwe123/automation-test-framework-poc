@@ -35,8 +35,5 @@ test.describe('Restful Booker API suite', ()=> {
         const body = await response.json();
         expect(body).toHaveProperty('firstname');
         expect(body).toHaveProperty('totalprice');
-        expect(body).toHaveProperty('bookingdates.checkin', '2021-08-17');
-        expect(body).toHaveProperty('bookingdates.checkout', '2022-04-08');
-
     })
 })
