@@ -1,42 +1,50 @@
 // stage 1
-import {expect, test } from '@playwright/test';
+import { expect, test } from "@playwright/test";
+import { BookingService } from "../../services/BookingService";
+import { bookingSchema, assertSchema } from "../../utils/schemaValidator";
 
-//URL
-const BASE_URL = 'https://restful-booker.herokuapp.com';
+test.describe("Refactored API Suite (Service Abstraction + Schema Contract)", () => {
+  let bookingService: BookingService;
 
-test('Stage 1: Fetch all bookings and create a raw booking', async ({ request }) => {
-    //GET Request
-    const getResponse = await request.get(`${BASE_URL}/booking`);
+  //initialize the service controller before the tests run
+  test.beforeEach(async ({ request }) => {
+    bookingService = new BookingService(request);
+  });
+
+  test("Stage 1: Fetch all bookings and create a raw booking", async ({}) => {
+    //GET Request via Service
+    const getResponse = await bookingService.getAllBookings();
     //expect to get 200 response
     expect(getResponse.status()).toBe(200);
 
     const bookings = await getResponse.json();
     expect(Array.isArray(bookings)).toBe(true);
 
-    //2. POST Request
-    const postResponse = await request.post(`${BASE_URL}/booking`,{
-        data: {
-            firstname: 'Sam',
-            lastname: 'Jun Xiang',
-            totalprice: 100,
-            depositpaid: true,
-            bookingdates: { checkin: '2027-01-01', checkout: '2027-01-02' },
-            additionalneeds: 'Breakfast'
-        },
-    });
+    //2. POST Request via Service
 
+    const payload = {
+      firstname: "Sam",
+      lastname: "Jun Xiang",
+      totalprice: 100,
+      depositpaid: true,
+      bookingdates: { checkin: "2027-01-01", checkout: "2027-01-02" },
+      additionalneeds: "Breakfast",
+    };
+
+    const postResponse = await bookingService.createBooking(payload);
     expect(postResponse.status()).toBe(200);
     const body = await postResponse.json();
-    expect(body.booking.firstname).toBe('Sam');
-});
+    expect(body.booking.firstname).toBe("Sam");
 
-test('Stage 2: Acquire Auth Token for Protected Operations', async ({ request }) => {
-    const authResponse = await request.post(`${BASE_URL}/auth`, {
-        data: {
-            username: 'admin',
-            password: 'password123',
-        },
-    });
+    //Stage 5: Schema Validation
+    assertSchema(body.booking, bookingSchema);
+  });
+
+  test("Stage 2: Acquire Auth Token for Protected Operations", async () => {
+    const authResponse = await bookingService.authenticate(
+      "admin",
+      "password123",
+    );
 
     expect(authResponse.status()).toBe(200);
     const authBody = await authResponse.json();
@@ -44,41 +52,33 @@ test('Stage 2: Acquire Auth Token for Protected Operations', async ({ request })
     //Extract and verify token
     const token = authBody.token;
     expect(token).toBeTruthy();
-    expect(typeof token).toBe('string');
-});
+    expect(typeof token).toBe("string");
+  });
 
-test('Stage 3: Full End-to-End Data Chaining', async ({request})=> {
+  test("Stage 3: Full End-to-End Data Chaining", async ({ request }) => {
     //generate the auth token
-    const authRes = await request.post(`${BASE_URL}/auth`, {
-        data:{
-            username: 'admin', password: 'password123'
-        },
-    });
-
-    const {token} = await authRes.json();
+    const authRes = await bookingService.authenticate("admin", "password123");
+    const { token } = await authRes.json();
     //create Resource, so it dont use the data from database
-    const createRes = await request.post(`${BASE_URL}/booking`, {
-        data: {
-            firstname: 'Sam',
-            lastname: 'QA',
-            totalprice: 200,
-            depositpaid: true,
-            bookingdates: { checkin: '2027-05-01', checkout: '2027-05-10' },
-            additionalneeds: 'Late Checkin',
-        }
+    const createRes = await bookingService.createBooking({
+      firstname: "Sam",
+      lastname: "QA",
+      totalprice: 200,
+      depositpaid: true,
+      bookingdates: { checkin: "2027-05-01", checkout: "2027-05-10" },
+      additionalneeds: "Late Checkin",
     });
 
     const createBody = await createRes.json();
     const bookingId = createBody.bookingid; //booking ID saved
 
+    // Stage 5: Schema Validation on created payload
+    assertSchema(createBody.booking, bookingSchema);
+
     //update resource using Saved Token and Saved ID (use the booking ID saved just now)
-    const updateRes = await request.put(`${BASE_URL}/booking/${bookingId}`, {
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Cookie: `token=${token}`,
-      },
-      data: {
+    const updateRes = await bookingService.updateBooking(
+      bookingId,
+      {
         firstname: "Sam",
         lastname: "QA Updated",
         totalprice: 300,
@@ -86,16 +86,16 @@ test('Stage 3: Full End-to-End Data Chaining', async ({request})=> {
         bookingdates: { checkin: "2027-05-01", checkout: "2027-05-10" },
         additionalneeds: "VIP Room",
       },
-    });
+      token,
+    );
     expect(updateRes.status()).toBe(200);
 
     // delete resource using Saved Token and Saved Id
-    const deleteRes = await request.delete(`${BASE_URL}/booking/${bookingId}`, {
-        headers: {'Cookie': `token=${token}`},
-    });
+    const deleteRes = await bookingService.deleteBooking(bookingId, token);
     expect(deleteRes.status()).toBe(201);
-    
+
     // Assert 404 not found on deleted resource
-    const verifyRes = await request.get(`${BASE_URL}/booking/${bookingId}`);
+    const verifyRes = await bookingService.getBooking(bookingId);
     expect(verifyRes.status()).toBe(404);
-})
+  });
+});
