@@ -29,3 +29,20 @@ test('Stage 1: Fetch all bookings and create a raw booking', async ({ request })
     const body = await postResponse.json();
     expect(body.booking.firstname).toBe('Sam');
 });
+
+test('Stage 2: Acquire Auth Token for Protected Operations', async ({ request }) => {
+    const authResponse = await request.post(`${BASE_URL}/auth`, {
+        data: {
+            username: 'admin',
+            password: 'password123',
+        },
+    });
+
+    expect(authResponse.status()).toBe(200);
+    const authBody = await authResponse.json();
+
+    //Extract and verify token
+    const token = authBody.token;
+    expect(token).toBeTruthy();
+    expect(typeof token).toBe('string');
+});
