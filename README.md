@@ -41,6 +41,8 @@ An automated end-to-end (E2E) testing suite engineered for web applications usin
 │   ├── CheckoutStepOnePage.ts
 │   ├── CheckoutStepTwoPage.ts
 │   └── CheckoutCompletePage.ts
+├── services/                      # API Service Abstraction layer
+│   └── BookingService.ts
 ├── tests/                         # Test specification layer
 │   ├── api/                       # REST API automation layer
 │   │   ├── auth-booking.spec.ts   # Token authentication & booking specs
@@ -50,6 +52,8 @@ An automated end-to-end (E2E) testing suite engineered for web applications usin
 │       ├── checkout.spec.ts       # End-to-end checkout funnel specs
 │       ├── inventory.spec.ts      # Product catalog & filtering specs
 │       └── saucedemo.spec.ts      # Authentication & route guard specs
+├── utils/                         # Utilities & schema validation layer
+│   └── schemaValidator.ts
 ├── playwright.config.ts           # Global framework configurations
 ├── package.json                   # Dependencies and scripts
 └── README.md                      # Framework documentation
