@@ -2,6 +2,7 @@
 import { expect, test } from "@playwright/test";
 import { BookingService } from "../../services/BookingService";
 import { bookingSchema, assertSchema } from "../../utils/schemaValidator";
+import { generateBookingPayload } from "../../utils/dataGenerator";
 
 test.describe("Refactored API Suite (Service Abstraction + Schema Contract)", () => {
   let bookingService: BookingService;
@@ -20,21 +21,23 @@ test.describe("Refactored API Suite (Service Abstraction + Schema Contract)", ()
     const bookings = await getResponse.json();
     expect(Array.isArray(bookings)).toBe(true);
 
+    const dynamicPayload = generateBookingPayload();
+
     //2. POST Request via Service
 
-    const payload = {
-      firstname: "Sam",
-      lastname: "Jun Xiang",
-      totalprice: 100,
-      depositpaid: true,
-      bookingdates: { checkin: "2027-01-01", checkout: "2027-01-02" },
-      additionalneeds: "Breakfast",
-    };
+    // const payload = {
+    //   firstname: "Sam",
+    //   lastname: "Jun Xiang",
+    //   totalprice: 100,
+    //   depositpaid: true,
+    //   bookingdates: { checkin: "2027-01-01", checkout: "2027-01-02" },
+    //   additionalneeds: "Breakfast",
+    // };
 
-    const postResponse = await bookingService.createBooking(payload);
+    const postResponse = await bookingService.createBooking(dynamicPayload);
     expect(postResponse.status()).toBe(200);
     const body = await postResponse.json();
-    expect(body.booking.firstname).toBe("Sam");
+    expect(body.booking.firstname).toBe(dynamicPayload.firstname);
 
     //Stage 5: Schema Validation
     assertSchema(body.booking, bookingSchema);
@@ -59,37 +62,33 @@ test.describe("Refactored API Suite (Service Abstraction + Schema Contract)", ()
     //generate the auth token
     const authRes = await bookingService.authenticate("admin", "password123");
     const { token } = await authRes.json();
+    const dynamicPayload = generateBookingPayload();
     //create Resource, so it dont use the data from database
-    const createRes = await bookingService.createBooking({
-      firstname: "Sam",
-      lastname: "QA",
-      totalprice: 200,
-      depositpaid: true,
-      bookingdates: { checkin: "2027-05-01", checkout: "2027-05-10" },
-      additionalneeds: "Late Checkin",
-    });
+    const createRes = await bookingService.createBooking(
+      dynamicPayload
+    );
 
     const createBody = await createRes.json();
     const bookingId = createBody.bookingid; //booking ID saved
 
+    expect(createBody.booking.firstname).toBe(dynamicPayload.firstname);
+    expect(createBody.booking.lastname).toBe(dynamicPayload.lastname);
+
     // Stage 5: Schema Validation on created payload
     assertSchema(createBody.booking, bookingSchema);
 
+    const updatedPayload = generateBookingPayload();
     //update resource using Saved Token and Saved ID (use the booking ID saved just now)
     const updateRes = await bookingService.updateBooking(
       bookingId,
-      {
-        firstname: "Sam",
-        lastname: "QA Updated",
-        totalprice: 300,
-        depositpaid: false,
-        bookingdates: { checkin: "2027-05-01", checkout: "2027-05-10" },
-        additionalneeds: "VIP Room",
-      },
+      updatedPayload,
       token,
     );
     expect(updateRes.status()).toBe(200);
 
+    //need to check after update the resource
+    const updateBody = await updateRes.json();
+    expect(updateBody.firstname).toBe(updatedPayload.firstname);
     // delete resource using Saved Token and Saved Id
     const deleteRes = await bookingService.deleteBooking(bookingId, token);
     expect(deleteRes.status()).toBe(201);
